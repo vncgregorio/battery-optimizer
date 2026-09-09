@@ -27,3 +27,15 @@ class BatterySpec:
             value = getattr(self, field_name)
             if not 0 <= value < 1:
                 raise ValueError(f"{field_name} must be within [0, 1)")
+
+
+@dataclass
+class BatteryState:
+    battery_spec: BatterySpec
+    state_of_charge_megawatt_hours: float = 0.0
+
+    def __post_init__(self):
+        if not 0 <= self.state_of_charge_megawatt_hours <= self.battery_spec.maximum_storage_energy_megawatt_hours:
+            raise ValueError(
+                "state_of_charge_megawatt_hours must be within the battery's storage limits"
+            )

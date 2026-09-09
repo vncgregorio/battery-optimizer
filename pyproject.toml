@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "battery-optimizer"
 version = "0.1.0"
-description = "Models a battery charging and discharging across two wholesale electricity markets to maximise profit"
+description = "Simulates a battery charging and discharging in a wholesale electricity market to maximise profit"
 requires-python = ">=3.10"
 dependencies = [
     "openpyxl>=3.1",
@@ -14,9 +14,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-]
-chart = [
-    "matplotlib>=3.8",
 ]
 
 [project.scripts]

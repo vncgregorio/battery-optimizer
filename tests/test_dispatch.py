@@ -1,7 +1,10 @@
+from datetime import datetime, timedelta
+
 import pytest
 
-from battery_optimizer.dispatch import Action, decide_action, maximum_sustainable_power_megawatts, percentile
+from battery_optimizer.dispatch import Action, decide_action, maximum_sustainable_power_megawatts, percentile, simulate
 from battery_optimizer.domain.battery import BatterySpec
+from battery_optimizer.domain.market import PricePoint
 
 
 def test_percentile_of_a_single_value_is_that_value():
@@ -49,3 +52,23 @@ def test_decide_action_discharges_when_price_is_above_the_expensive_threshold():
 
 def test_decide_action_stays_idle_between_the_thresholds():
     assert decide_action(price=50.0, cheap_threshold=20.0, expensive_threshold=80.0) is Action.IDLE
+
+
+def test_simulate_charges_on_a_cheap_price_and_discharges_on_an_expensive_one(battery_spec):
+    start = datetime(2018, 1, 1)
+    prices = [10.0, 10.0, 10.0, 1.0, 200.0]
+    price_points = [
+        PricePoint(period_start=start + timedelta(minutes=30 * step), period_duration_hours=0.5, price_pounds_per_megawatt_hour=price)
+        for step, price in enumerate(prices)
+    ]
+
+    records = simulate(battery_spec, price_points)
+
+    assert [record.action for record in records[:3]] == [Action.IDLE] * 3
+
+    assert records[3].action is Action.CHARGE
+    assert records[3].power_megawatts == pytest.approx(2.0)
+    assert records[3].state_of_charge_megawatt_hours == pytest.approx(0.95)
+
+    assert records[4].action is Action.DISCHARGE
+    assert records[4].state_of_charge_megawatt_hours == pytest.approx(0.0)

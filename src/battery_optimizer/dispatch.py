@@ -1,6 +1,9 @@
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
-from battery_optimizer.domain.battery import BatterySpec
+from battery_optimizer.domain.battery import BatterySpec, BatteryState
+from battery_optimizer.domain.market import PricePoint
 
 
 class Action(Enum):
@@ -53,3 +56,49 @@ def decide_action(price: float, cheap_threshold: float, expensive_threshold: flo
     if price > expensive_threshold:
         return Action.DISCHARGE
     return Action.IDLE
+
+
+@dataclass(frozen=True)
+class DispatchRecord:
+    period_start: datetime
+    action: Action
+    power_megawatts: float
+    price_pounds_per_megawatt_hour: float
+    duration_hours: float
+    state_of_charge_megawatt_hours: float
+
+
+def simulate(
+    battery_spec: BatterySpec,
+    price_points: list[PricePoint],
+    cheap_percentile: float = 20,
+    expensive_percentile: float = 80,
+) -> list[DispatchRecord]:
+    all_prices = [price_point.price_pounds_per_megawatt_hour for price_point in price_points]
+    cheap_threshold = percentile(all_prices, cheap_percentile)
+    expensive_threshold = percentile(all_prices, expensive_percentile)
+
+    battery_state = BatteryState(battery_spec=battery_spec)
+    records = []
+    for price_point in price_points:
+        action = decide_action(price_point.price_pounds_per_megawatt_hour, cheap_threshold, expensive_threshold)
+        power_megawatts = maximum_sustainable_power_megawatts(
+            action, battery_spec, battery_state.state_of_charge_megawatt_hours, price_point.period_duration_hours
+        )
+
+        if action is Action.CHARGE:
+            battery_state.charge(power_megawatts, price_point.period_duration_hours)
+        elif action is Action.DISCHARGE:
+            battery_state.discharge(power_megawatts, price_point.period_duration_hours)
+
+        records.append(
+            DispatchRecord(
+                period_start=price_point.period_start,
+                action=action,
+                power_megawatts=power_megawatts,
+                price_pounds_per_megawatt_hour=price_point.price_pounds_per_megawatt_hour,
+                duration_hours=price_point.period_duration_hours,
+                state_of_charge_megawatt_hours=battery_state.state_of_charge_megawatt_hours,
+            )
+        )
+    return records

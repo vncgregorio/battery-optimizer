@@ -1,6 +1,7 @@
 import openpyxl
 
 from battery_optimizer.domain.battery import BatterySpec
+from battery_optimizer.domain.market import PricePoint
 
 _BATTERY_PARAMETER_ROW_LABELS = {
     "Max charging rate": "maximum_charge_power_megawatts",
@@ -23,3 +24,21 @@ def load_battery_spec(battery_parameters_workbook_path) -> BatterySpec:
             battery_spec_arguments[field_name] = row[1]
 
     return BatterySpec(**battery_spec_arguments)
+
+
+def load_market_one_prices(market_prices_workbook_path) -> list[PricePoint]:
+    workbook = openpyxl.load_workbook(market_prices_workbook_path, data_only=True)
+    worksheet = workbook["Half-hourly data"]
+
+    price_points = []
+    for period_start, price_pounds_per_megawatt_hour in worksheet.iter_rows(min_row=2, values_only=True):
+        if period_start is None:
+            continue
+        price_points.append(
+            PricePoint(
+                period_start=period_start,
+                period_duration_hours=0.5,
+                price_pounds_per_megawatt_hour=price_pounds_per_megawatt_hour,
+            )
+        )
+    return price_points

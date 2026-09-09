@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "battery-optimizer"
+version = "0.1.0"
+description = "Simulates a battery charging and discharging in a wholesale electricity market to maximise profit"
+requires-python = ">=3.10"
+dependencies = [
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+battery-optimizer = "battery_optimizer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

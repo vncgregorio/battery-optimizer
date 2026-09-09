@@ -46,10 +46,10 @@ class BatteryState:
         stored_energy_megawatt_hours = (
             power_megawatts * duration_hours * (1 - self.battery_spec.charging_efficiency_loss_fraction)
         )
-        new_state_of_charge_megawatt_hours = self.state_of_charge_megawatt_hours + stored_energy_megawatt_hours
-        if new_state_of_charge_megawatt_hours > self.battery_spec.maximum_storage_energy_megawatt_hours:
-            raise ValueError("Charging would exceed the battery's maximum storage energy")
-        self.state_of_charge_megawatt_hours = new_state_of_charge_megawatt_hours
+        self.state_of_charge_megawatt_hours = min(
+            self.state_of_charge_megawatt_hours + stored_energy_megawatt_hours,
+            self.battery_spec.maximum_storage_energy_megawatt_hours,
+        )
 
     def discharge(self, power_megawatts: float, duration_hours: float) -> None:
         if power_megawatts > self.battery_spec.maximum_discharge_power_megawatts:
@@ -58,7 +58,7 @@ class BatteryState:
         drawn_from_storage_megawatt_hours = delivered_energy_megawatt_hours / (
             1 - self.battery_spec.discharging_efficiency_loss_fraction
         )
-        new_state_of_charge_megawatt_hours = self.state_of_charge_megawatt_hours - drawn_from_storage_megawatt_hours
-        if new_state_of_charge_megawatt_hours < 0:
-            raise ValueError("Discharging would draw more energy than the battery has stored")
-        self.state_of_charge_megawatt_hours = new_state_of_charge_megawatt_hours
+        self.state_of_charge_megawatt_hours = max(
+            self.state_of_charge_megawatt_hours - drawn_from_storage_megawatt_hours,
+            0.0,
+        )

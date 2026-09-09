@@ -75,14 +75,14 @@ def test_discharging_removes_more_stored_energy_than_it_delivers_to_the_grid(bat
     assert battery_state.state_of_charge_megawatt_hours == pytest.approx(4.0 - drawn_from_storage_megawatt_hours)
 
 
-def test_charging_and_discharging_beyond_available_capacity_or_energy_raise(battery_spec):
+def test_charging_and_discharging_beyond_capacity_or_available_energy_clamp_instead_of_overshooting(battery_spec):
     almost_full_battery = BatteryState(battery_spec=battery_spec, state_of_charge_megawatt_hours=3.9)
-    with pytest.raises(ValueError):
-        almost_full_battery.charge(power_megawatts=2.0, duration_hours=1.0)
+    almost_full_battery.charge(power_megawatts=2.0, duration_hours=1.0)
+    assert almost_full_battery.state_of_charge_megawatt_hours == battery_spec.maximum_storage_energy_megawatt_hours
 
     almost_empty_battery = BatteryState(battery_spec=battery_spec, state_of_charge_megawatt_hours=0.1)
-    with pytest.raises(ValueError):
-        almost_empty_battery.discharge(power_megawatts=2.0, duration_hours=1.0)
+    almost_empty_battery.discharge(power_megawatts=2.0, duration_hours=1.0)
+    assert almost_empty_battery.state_of_charge_megawatt_hours == 0.0
 
 
 def test_charging_and_discharging_above_the_maximum_rate_raise_even_with_spare_capacity(battery_spec):

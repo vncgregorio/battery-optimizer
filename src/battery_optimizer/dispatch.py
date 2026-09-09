@@ -45,3 +45,11 @@ def maximum_sustainable_power_megawatts(
         return max(0.0, min(battery_spec.maximum_discharge_power_megawatts, energy_limited_power_megawatts))
 
     return 0.0
+
+
+def decide_action(price: float, cheap_threshold: float, expensive_threshold: float) -> Action:
+    if price < cheap_threshold:
+        return Action.CHARGE
+    if price > expensive_threshold:
+        return Action.DISCHARGE
+    return Action.IDLE

@@ -1,6 +1,6 @@
 import pytest
 
-from battery_optimizer.dispatch import Action, maximum_sustainable_power_megawatts, percentile
+from battery_optimizer.dispatch import Action, decide_action, maximum_sustainable_power_megawatts, percentile
 from battery_optimizer.domain.battery import BatterySpec
 
 
@@ -37,3 +37,15 @@ def test_discharging_power_is_capped_by_the_available_stored_energy(battery_spec
     )
 
     assert power == pytest.approx(0.1 * 0.95)
+
+
+def test_decide_action_charges_when_price_is_below_the_cheap_threshold():
+    assert decide_action(price=10.0, cheap_threshold=20.0, expensive_threshold=80.0) is Action.CHARGE
+
+
+def test_decide_action_discharges_when_price_is_above_the_expensive_threshold():
+    assert decide_action(price=90.0, cheap_threshold=20.0, expensive_threshold=80.0) is Action.DISCHARGE
+
+
+def test_decide_action_stays_idle_between_the_thresholds():
+    assert decide_action(price=50.0, cheap_threshold=20.0, expensive_threshold=80.0) is Action.IDLE
